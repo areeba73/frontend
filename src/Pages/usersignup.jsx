@@ -63,11 +63,12 @@ const UserSignup = () => {
     const resultAction = await dispatch(registerUser({ fullName, email, password }));
 
     if (registerUser.fulfilled.match(resultAction)) {
+      // ✅ Role already saved in authSlice
       alert("Account created! Please check your email for verification.");
       setFullName('');
       setEmail('');
       setPassword('');
-      navigate('/userlogin'); 
+      navigate('/auth'); // ✅ Go to AuthHandler for email verification
     } else {
       console.error("Signup failed:", resultAction.payload);
     }

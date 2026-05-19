@@ -95,8 +95,9 @@ const DoctorSignup = () => {
     const resultAction = await dispatch(registerDoctor(formData));
 
     if (registerDoctor.fulfilled.match(resultAction)) {
+      // ✅ Role already saved in authSlice
       alert("Doctor Account created! Please check email for verification.");
-      navigate('/doclogin'); 
+      navigate('/auth'); // ✅ Go to AuthHandler for email verification
     } else {
       console.log("Registration failed");
     }
@@ -280,7 +281,7 @@ const DoctorSignup = () => {
             <button 
               type="submit"
               disabled={loading || !formData.fullName.trim() || !formData.email.trim() || !formData.password.trim() || !formData.speciality.trim() || !formData.clinicName.trim() || !formData.mobile.trim()}
-              className="md:col-span-2 w-full mt-4 py-4 bg-[#2F357D] hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 mt-2  "
+              className="md:col-span-2 w-full mt-4 py-4 bg-[#2F357D] hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-200 transition-all active:scale-95"
             >
               {loading ? "Registering..." : "Register"}
             </button>

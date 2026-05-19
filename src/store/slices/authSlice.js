@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api';
+import { auth } from '../../firebase'; // ✅ Firebase import
 
 // ===== EXISTING THUNKS =====
 export const registerUser = createAsyncThunk(
@@ -7,6 +8,10 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await api.post('/user/signup', userData);
+      
+      // ✅ Save role to localStorage as backup
+      localStorage.setItem('userRole', 'user');
+      
       return response.data; 
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Server connection failed!");
@@ -21,7 +26,8 @@ export const loginUser = createAsyncThunk(
       const response = await api.post('/user/login', credentials);
       const data = response.data;
       localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('token', data.token || ''); 
+      localStorage.setItem('token', data.token || '');
+      localStorage.setItem('userRole', 'user'); // ✅ Save role
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Login failed!");
@@ -34,6 +40,10 @@ export const registerDoctor = createAsyncThunk(
   async (doctorData, { rejectWithValue }) => {
     try {
       const response = await api.post('/doctor/signup', doctorData);
+      
+      // ✅ Save role to localStorage as backup
+      localStorage.setItem('userRole', 'doctor');
+      
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Doctor registration failed!");
@@ -48,7 +58,8 @@ export const loginDoctor = createAsyncThunk(
       const response = await api.post('/doctor/login', credentials);
       const data = response.data;
       localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('token', data.token || ''); 
+      localStorage.setItem('token', data.token || '');
+      localStorage.setItem('userRole', 'doctor'); // ✅ Save role
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Doctor login failed!");
@@ -99,7 +110,7 @@ const savedUser = JSON.parse(localStorage.getItem('user'));
 
 const initialState = {
   user: savedUser || null,
-  role: savedUser?.role || null,
+  role: savedUser?.role || localStorage.getItem('userRole') || null, // ✅ Fallback to localStorage
   isAuthenticated: !!savedUser,
   loading: false,
   error: null,
@@ -129,6 +140,7 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole'); // ✅ Clear role
     },
     clearError: (state) => {
       state.error = null;
@@ -144,7 +156,7 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // ===== FORGOT PASSWORD CASES (addCase FIRST) =====
+    // ===== FORGOT PASSWORD CASES =====
     builder
       .addCase(forgotPassword.pending, (state) => {
         state.forgotPassword.loading = true;
@@ -177,7 +189,7 @@ const authSlice = createSlice({
         state.resetPassword.error = action.payload;
         state.resetPassword.success = false;
       })
-      // ===== NOW MATCHERS (addMatcher AFTER) =====
+      // ===== MATCHERS =====
       .addMatcher(
         (action) => action.type.endsWith('/pending') && action.type.includes('register'),
         (state) => {
@@ -187,8 +199,9 @@ const authSlice = createSlice({
       )
       .addMatcher(
         (action) => action.type.endsWith('/fulfilled') && action.type.includes('register'),
-        (state) => {
+        (state, action) => {
           state.loading = false;
+          state.role = action.payload?.user?.role || null; // ✅ Set role after register
         }
       )
       .addMatcher(
