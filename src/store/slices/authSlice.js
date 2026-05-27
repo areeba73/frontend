@@ -1,6 +1,15 @@
+
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api';
-import { auth } from '../../firebase'; // ✅ Firebase import
+const getErrorMessage = (error, fallback) => {
+  const payload = error?.response?.data?.error || error?.response?.data || error;
+
+  if (typeof payload === 'string') return payload;
+  if (payload?.message) return payload.message;
+  if (payload?.error && typeof payload.error === 'string') return payload.error;
+
+  return fallback;
+};
 
 // ===== EXISTING THUNKS =====
 export const registerUser = createAsyncThunk(
@@ -10,11 +19,10 @@ export const registerUser = createAsyncThunk(
       const response = await api.post('/user/signup', userData);
       
       // ✅ Save role to localStorage as backup
-      localStorage.setItem('userRole', 'user');
       
       return response.data; 
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || "Server connection failed!");
+      return rejectWithValue(getErrorMessage(error, "Server connection failed!"));
     }
   }
 );
@@ -27,10 +35,10 @@ export const loginUser = createAsyncThunk(
       const data = response.data;
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token || '');
-      localStorage.setItem('userRole', 'user'); // ✅ Save role
+      localStorage.setItem('userRole', data.user?.role || 'user');
       return data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || "Login failed!");
+      return rejectWithValue(getErrorMessage(error, "Login failed!"));
     }
   }
 );
@@ -42,11 +50,10 @@ export const registerDoctor = createAsyncThunk(
       const response = await api.post('/doctor/signup', doctorData);
       
       // ✅ Save role to localStorage as backup
-      localStorage.setItem('userRole', 'doctor');
       
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || "Doctor registration failed!");
+      return rejectWithValue(getErrorMessage(error, "Doctor registration failed!"));
     }
   }
 );
@@ -59,10 +66,10 @@ export const loginDoctor = createAsyncThunk(
       const data = response.data;
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token || '');
-      localStorage.setItem('userRole', 'doctor'); // ✅ Save role
+      localStorage.setItem('userRole', data.user?.role || 'doctor');
       return data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || "Doctor login failed!");
+      return rejectWithValue(getErrorMessage(error, "Doctor login failed!"));
     }
   }
 );
@@ -79,7 +86,7 @@ export const forgotPassword = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.error || 'Failed to send reset email. Try again.'
+        getErrorMessage(error, 'Failed to send reset email. Try again.')
       );
     }
   }
@@ -99,19 +106,30 @@ export const resetPassword = createAsyncThunk(
       };
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.error || 'Error resetting password'
+        getErrorMessage(error, 'Error resetting password')
       );
     }
   }
 );
 
 // ===== STATE =====
-const savedUser = JSON.parse(localStorage.getItem('user'));
+const getSavedUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user'));
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
+const savedUser = getSavedUser();
+const savedToken = localStorage.getItem('token');
+const hasValidSession = Boolean(savedUser && savedToken);
 
 const initialState = {
-  user: savedUser || null,
-  role: savedUser?.role || localStorage.getItem('userRole') || null, // ✅ Fallback to localStorage
-  isAuthenticated: !!savedUser,
+  user: hasValidSession ? savedUser : null,
+  role: hasValidSession ? (savedUser?.role || localStorage.getItem('userRole')) : null,
+  isAuthenticated: hasValidSession,
   loading: false,
   error: null,
   forgotPassword: {
@@ -146,7 +164,7 @@ const authSlice = createSlice({
       state.error = null;
     },
     setError: (state, action) => {
-      state.error = action.payload;
+      state.error = getErrorMessage(action.payload, 'Something went wrong');
     },
     clearPasswordMessages: (state) => {
       state.forgotPassword.message = '';
@@ -170,7 +188,7 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.forgotPassword.loading = false;
-        state.forgotPassword.error = action.payload;
+        state.forgotPassword.error = getErrorMessage(action.payload, 'Failed to send reset email. Try again.');
         state.forgotPassword.success = false;
       })
       // ===== RESET PASSWORD CASES =====
@@ -186,7 +204,7 @@ const authSlice = createSlice({
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.resetPassword.loading = false;
-        state.resetPassword.error = action.payload;
+        state.resetPassword.error = getErrorMessage(action.payload, 'Error resetting password');
         state.resetPassword.success = false;
       })
       // ===== MATCHERS =====
@@ -199,9 +217,14 @@ const authSlice = createSlice({
       )
       .addMatcher(
         (action) => action.type.endsWith('/fulfilled') && action.type.includes('register'),
-        (state, action) => {
+        (state) => {
           state.loading = false;
-          state.role = action.payload?.user?.role || null; // ✅ Set role after register
+          state.isAuthenticated = false;
+          state.user = null;
+          state.role = null;
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userRole');
         }
       )
       .addMatcher(
@@ -215,9 +238,9 @@ const authSlice = createSlice({
         (action) => action.type.endsWith('/fulfilled') && action.type.includes('login'),
         (state, action) => {
           state.loading = false;
-          state.isAuthenticated = true;
+          state.isAuthenticated = Boolean(action.payload?.user && action.payload?.token);
           state.user = action.payload.user;
-          state.role = action.payload.user.role; 
+          state.role = action.payload.user?.role || null; 
           state.error = null;
         }
       )
@@ -225,7 +248,7 @@ const authSlice = createSlice({
         (action) => action.type.endsWith('/rejected'),
         (state, action) => {
           state.loading = false;
-          state.error = action.payload;
+          state.error = getErrorMessage(action.payload, 'Something went wrong');
         }
       );
   },

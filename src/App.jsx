@@ -14,66 +14,103 @@ import Chatbot from './Pages/chatbot';
 import UserDashboard from './Pages/userdash';
 import AdminDashboard from './Pages/admindash';
 import DoctorDashboard from './Pages/dctrdash';
-import AuthHandler from "./pages/AuthHandler";
+import AuthHandler from './Pages/AuthHandler';
 
+const roleHome = {
+  admin: '/admindash',
+  doctor: '/dctrdash',
+  user: '/userdash',
+};
+
+const ProtectedRoute = ({ children, allowedRoles, loginPath = '/userlogin' }) => {
+  const { isAuthenticated, role, user } = useSelector((state) => state.auth);
+  const hasSession = Boolean(isAuthenticated && user && localStorage.getItem('token'));
+
+  if (!hasSession) {
+    return <Navigate to={loginPath} replace />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to={roleHome[role] || '/'} replace />;
+  }
+
+  return children;
+};
 
 function App() {
-  const { isAuthenticated, role } = useSelector((state) => state.auth);
-
   return (
     <Routes>
-      {/* ===== PUBLIC ROUTES ===== */}
       <Route path="/" element={<Home />} />
-      
-      {/* LOGIN & SIGNUP ROUTES */}
+
       <Route path="/userlogin" element={<UserLogin />} />
       <Route path="/usersignup" element={<UserSignup />} />
       <Route path="/doclogin" element={<DoctorLogin />} />
       <Route path="/docsignup" element={<DoctorSignup />} />
       <Route path="/forget" element={<ForgotPassword />} />
       <Route path="/reset" element={<ResetPassword />} />
-<Route path="/auth" element={<AuthHandler />} />
+      <Route path="/auth" element={<AuthHandler />} />
 
-      {/* ===== PROTECTED ROUTES (Role-based) ===== */}
-      
-      {/* USER ROUTES */}
-      <Route 
-        path="/userdash" 
-        element={isAuthenticated && (role === 'user' || role === 'admin') ? <UserDashboard /> : <Navigate to="/userlogin" />} 
-      />
-      <Route 
-        path="/chatbot" 
-        element={isAuthenticated && (role === 'user' || role === 'admin') ? <Chatbot /> : <Navigate to="/userlogin" />} 
-      />
-      <Route 
-        path="/result" 
-        element={isAuthenticated && (role === 'user' || role === 'admin') ? <Result /> : <Navigate to="/userlogin" />} 
-      />
-      <Route 
-        path="/scan" 
-        element={isAuthenticated && (role === 'user' || role === 'admin') ? <ScanMethods /> : <Navigate to="/userlogin" />} 
-      />
-      
-      {/* DOCTORS ROUTE */}
-      <Route 
-        path="/doctors" 
-        element={isAuthenticated && (role === 'user' || role === 'doctor' || role === 'admin') ? <Doctors /> : <Navigate to="/userlogin" />} 
+      <Route
+        path="/userdash"
+        element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <UserDashboard />
+          </ProtectedRoute>
+        }
       />
 
-      {/* DOCTOR ROUTES */}
-      <Route 
-        path="/dctrdash" 
-        element={isAuthenticated && role === 'doctor' ? <DoctorDashboard /> : <Navigate to="/doclogin" />} 
+      <Route
+        path="/chatbot"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <Chatbot />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/result"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <Result />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scan"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <ScanMethods />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctors"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'doctor', 'admin']}>
+            <Doctors />
+          </ProtectedRoute>
+        }
       />
 
-      {/* ADMIN ROUTES */}
-      <Route 
-        path="/admindash" 
-        element={isAuthenticated && role === 'admin' ? <AdminDashboard /> : <Navigate to="/userlogin" />} 
+      <Route
+        path="/dctrdash"
+        element={
+          <ProtectedRoute allowedRoles={['doctor']} loginPath="/doclogin">
+            <DoctorDashboard />
+          </ProtectedRoute>
+        }
       />
 
-      {/* FALLBACK */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route
+        path="/admindash"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

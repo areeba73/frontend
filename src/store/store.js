@@ -13,7 +13,6 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false, // Firebase objects ke liye
     }),
-  // ✅ Dev tools support
   devTools: process.env.NODE_ENV !== 'production',
 });
 

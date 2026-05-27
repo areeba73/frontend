@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
-import { registerDoctor, clearError, setError } from '../store/slices/authSlice';
+import { registerDoctor, clearError } from '../store/slices/authSlice';
 import bg from "../assets/bg.jpeg";
 import logoImg from "../assets/logo.png";
 

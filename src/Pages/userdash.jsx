@@ -1,39 +1,149 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Navbar from '../Component/Navbar';
 import Footer from '../Component/Footer';
 import bg from "../assets/bg.jpeg";
 import { LogOut, Calendar, Clock,  } from 'lucide-react'; 
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { logout } from '../store/slices/authSlice';
+import { fetchEmotionHistory } from '../store/slices/emotionSlice';
+
+const moodConfig = {
+  happy: { label: "Happy", emoji: "😊" },
+  sad: { label: "Sad", emoji: "😢" },
+  angry: { label: "Angry", emoji: "😠" },
+  neutral: { label: "Neutral", emoji: "😐" },
+  fear: { label: "Fear", emoji: "😨" },
+  surprise: { label: "Surprise", emoji: "😲" },
+  disgust: { label: "Disgust", emoji: "🤢" }
+};
+
+const moodColors = {
+  happy: "bg-[#2F357D]/80",
+  sad: "bg-[#2F357D]/80",
+  angry: "bg-[#2F357D]/80",
+  neutral: "bg-[#2F357D]/80",
+  fear: "bg-[#2F357D]/80",
+  surprise: "bg-[#2F357D]/80",
+  disgust: "bg-[#2F357D]/80"
+};
+
+const emotionRisk = {
+  happy: 8,
+  joy: 8,
+  neutral: 24,
+  surprise: 42,
+  sad: 82,
+  sadness: 82,
+  angry: 90,
+  anger: 90,
+  fear: 95,
+  fearful: 95,
+  disgust: 78,
+  disgusted: 78
+};
 
 const UserDashboard = () => {
-  const moodConfig = {
-    happy: { label: "Happy", emoji: "😊" },
-    sad: { label: "Sad", emoji: "😢" },
-    angry: { label: "Angry", emoji: "😠" },
-    neutral: { label: "Neutral", emoji: "😐" },
-    fear: { label: "Fear", emoji: "😨" },
-    surprise: { label: "Surprise", emoji: "😲" },
-    disgust: { label: "Disgust", emoji: "🤢" }
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const { history, loading } = useSelector((state) => state.emotions);
+  const [showAllReflections, setShowAllReflections] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchEmotionHistory({ days: 7 }));
+  }, [dispatch]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/');
   };
 
-  const moodColors = {
-    happy: "bg-[#2F357D]/80",
-    sad: "bg-[#2F357D]/80",
-    angry: "bg-[#2F357D]/80",
-    neutral: "bg-[#2F357D]/80",
-    fear: "bg-[#2F357D]/80",
-    surprise: "bg-[#2F357D]/80",
-    disgust: "bg-[#2F357D]/80"
-  };
+  const moodData = useMemo(() => {
+    const byDate = new Map();
 
-  const moodData = [
-    { day: "Mon", type: "happy", value: 80 },
-    { day: "Tue", type: "neutral", value: 50 },
-    { day: "Wed", type: "sad", value: 40 },
-    { day: "Thu", type: "angry", value: 70 },
-    { day: "Fri", type: "surprise", value: 85 },
-    { day: "Sat", type: "fear", value: 60 },
-    { day: "Sun", type: "happy", value: 95 }
-  ];
+    (history || []).forEach((item) => {
+      const dateKey = item.date || item.timestamp?.slice?.(0, 10);
+      if (!dateKey || item.type === 'multimodal') return;
+      const existing = byDate.get(dateKey);
+      if (!existing || new Date(item.timestamp || 0) > new Date(existing.timestamp || 0)) {
+        byDate.set(dateKey, item);
+      }
+    });
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const key = date.toISOString().slice(0, 10);
+      const item = byDate.get(key);
+      const type = (item?.emotion || 'neutral').toLowerCase();
+
+      return {
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        type: moodConfig[type] ? type : 'neutral',
+        value: item ? Math.max(8, Math.round((Number(item.confidence) || 0.5) * 100)) : 8
+      };
+    });
+  }, [history]);
+
+  const recentEmotions = useMemo(() => (
+    (history || [])
+      .filter((item) => item.emotion && ['face', 'voice', 'text'].includes(item.type))
+      .map((item) => {
+        const type = (item.emotion || 'neutral').toLowerCase();
+        const config = moodConfig[type] || moodConfig.neutral;
+        const date = item.timestamp
+          ? new Date(item.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : item.date || 'Recent';
+
+        return {
+          date,
+          text: `${item.type || 'scan'} detected ${config.label}`,
+          emoji: config.emoji
+        };
+      })
+  ), [history]);
+
+  const visibleReflections = showAllReflections ? recentEmotions : recentEmotions.slice(0, 3);
+
+  const balance = useMemo(() => {
+    const records = history || [];
+    const latestSeverity = records.find((item) => item.type === 'multimodal' && item.severity?.score !== undefined);
+
+    if (latestSeverity) {
+      const score = Math.max(0, Math.min(100, Number(latestSeverity.severity.score) || 0));
+      const balanceScore = 100 - score;
+
+      return {
+        percent: balanceScore,
+        label: balanceScore >= 70 ? 'Stable' : balanceScore >= 40 ? 'Moderate' : 'Needs Care',
+        note: latestSeverity.suggestion || 'Based on your latest combined emotion severity.'
+      };
+    }
+
+    const recent = records.filter((item) => item.emotion).slice(0, 7);
+    if (!recent.length) {
+      return {
+        percent: 0,
+        label: 'No Data',
+        note: 'Run emotion scans to calculate your balance score.'
+      };
+    }
+
+    const averageRisk = recent.reduce((sum, item) => {
+      const emotion = (item.emotion || 'neutral').toLowerCase();
+      const risk = emotionRisk[emotion] ?? 35;
+      const confidence = Number(item.confidence) || 0.5;
+      return sum + (risk * confidence);
+    }, 0) / recent.length;
+    const balanceScore = Math.round(Math.max(0, Math.min(100, 100 - averageRisk)));
+
+    return {
+      percent: balanceScore,
+      label: balanceScore >= 70 ? 'Stable' : balanceScore >= 40 ? 'Moderate' : 'Needs Care',
+      note: 'Calculated from your recent saved emotion scans.'
+    };
+  }, [history]);
 
   // Appointment Data (Email-based)
   const upcomingAppointments = [
@@ -60,7 +170,7 @@ const UserDashboard = () => {
         {/* HEADER */}
         <div className="text-center md:text-left mb-10">
           <h2 className="text-3xl md:text-5xl font-extrabold text-[#2F357D] tracking-tight">
-            Welcome back, David <span className="inline-block animate-bounce">😊</span>
+            Welcome back, {user?.fullName || user?.name || 'User'} <span className="inline-block animate-bounce">😊</span>
           </h2>
           <p className="text-[#2F357D] mt-2 font-medium">Your emotional insights dashboard</p>
         </div>
@@ -82,7 +192,7 @@ const UserDashboard = () => {
               {moodData.map((item, i) => (
                 <div key={i} className="group relative flex flex-col items-center justify-end flex-1 h-full">
                   <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-blue-900 text-white px-2 py-1 rounded-lg shadow text-[10px] font-bold z-10">
-                    {moodConfig[item.type].emoji} {item.value}%
+                    {moodConfig[item.type].emoji} {loading ? '...' : `${item.value}%`}
                   </div>
                   <div className="relative flex items-end h-full w-full justify-center">
                     <div className="absolute bottom-0 w-[18px] sm:w-[24px] md:w-[30px] h-full bg-blue-100/30 rounded-full"></div>
@@ -111,13 +221,15 @@ const UserDashboard = () => {
               <div className="absolute w-44 h-44 rounded-full border border-white/10 animate-[spin_10s_linear_infinite_reverse]"></div>
               <div className="relative w-40 h-40 rounded-full border-[12px] border-white/10 border-t-white flex items-center justify-center shadow-inner bg-black/5 backdrop-blur-sm">
                 <div className="text-center">
-                  <span className="text-5xl font-black text-white tracking-tighter">78%</span>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-blue-100 font-bold mt-1">Stable</p>
+                  <span className="text-5xl font-black text-white tracking-tighter">
+                    {loading ? '...' : `${balance.percent}%`}
+                  </span>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-blue-100 font-bold mt-1">{balance.label}</p>
                 </div>
               </div>
             </div>
             <div className="z-10 text-white/60 text-[11px] font-medium italic text-center px-4">
-              "Your emotional state is consistently balanced this week."
+              "{balance.note}"
             </div>
           </div>
 
@@ -167,13 +279,22 @@ const UserDashboard = () => {
 
           {/* REFLECTIONS */}
           <div className="lg:col-span-3 mt-4">
-            <h3 className="text-2xl font-bold mb-6 text-[#2F357D] px-2">Recent Reflections</h3>
+            <div className="flex items-center justify-between gap-4 mb-6 px-2">
+              <h3 className="text-2xl font-bold text-[#2F357D]">Recent Reflections</h3>
+              {recentEmotions.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllReflections((value) => !value)}
+                  className="text-xs font-bold text-[#2F357D] bg-white/70 border border-white px-4 py-2 rounded-full shadow-sm hover:bg-white transition-all"
+                >
+                  {showAllReflections ? 'Show Less' : `View All (${recentEmotions.length})`}
+                </button>
+              )}
+            </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                { date: "April 12", text: "Had a great day enjoying the weather!", emoji: "😊" },
-                { date: "April 11", text: "Feeling a bit tired but productive.", emoji: "😐" },
-                { date: "April 10", text: "Unexpected meeting went really well!", emoji: "😲" }
-              ].map((ref, i) => (
+              {(visibleReflections.length ? visibleReflections : [
+                { date: "No scans", text: "Run an emotion scan to see your results here.", emoji: "😐" }
+              ]).map((ref, i) => (
                 <div 
                   key={i} 
                   className="bg-white/60 backdrop-blur-xl p-4 rounded-[1.8rem] border border-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
@@ -193,14 +314,17 @@ const UserDashboard = () => {
       </main>
 
       {/* FIXED LOGOUT BUTTON (Bottom Right) */}
-      <button className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-white/90 backdrop-blur-md hover:bg-red-500 hover:text-white text-red-600 px-6 py-3 rounded-full font-bold transition-all duration-300 border border-red-500/20 shadow-2xl group">
+      <button
+        onClick={handleLogout}
+        className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-white/90 backdrop-blur-md hover:bg-red-500 hover:text-white text-red-600 px-6 py-3 rounded-full font-bold transition-all duration-300 border border-red-500/20 shadow-2xl group"
+      >
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-in-out whitespace-nowrap">Logout</span>
         <LogOut size={20} />
       </button>
 
       <Footer />
 
-      <style jsx>{`
+      <style>{`
         @keyframes slideUp { from { height: 0; opacity: 0; } to { opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 1s ease-out forwards; }
