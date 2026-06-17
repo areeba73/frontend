@@ -5,14 +5,14 @@ import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
-    <section className="relative min-h-[80vh] flex flex-col lg:flex-row items-center justify-between px-[5%] py-10 lg:py-0 overflow-hidden mt-[-20px] md:mt-[-40px] lg:mt-[-50px]">
+    <section className="relative flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-10 px-0 sm:px-[5%] py-6 md:py-8 lg:py-10 overflow-hidden">
       
       {/* Hero Content */}
-      <div className="flex-1 z-10 text-center lg:text-left mt-10 lg:mt-0 order-2 lg:order-1">
+      <div className="flex-1 z-10 text-center lg:text-left order-2 lg:order-1">
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-black mb-4 leading-[1.1] tracking-tight">
           <span className=" text-[#2F357D]">Track Your </span>
           <br className="hidden lg:block" />
-          <span className="bg-gradient-to-br from-[#5390F5] to-[#6D5DF1] bg-clip-text text-transparent">
+          <span className="inline-block whitespace-nowrap bg-gradient-to-br from-[#5390F5] to-[#6D5DF1] bg-clip-text text-transparent">
             Inner Peace
           </span>
         </h1>
@@ -33,7 +33,7 @@ const Header = () => {
       </div>
 
       {/* Hero Image Container */}
-      <div className="flex-[1.2] lg:flex-[1.9] flex justify-center lg:justify-end relative mt-5 lg:mt-0 lg:-mr-5 lg:translate-x-5 order-1 lg:order-2 w-full">
+      <div className="flex-[1.2] lg:flex-[1.9] flex justify-center lg:justify-end relative order-1 lg:order-2 w-full">
         <div className="relative group w-full max-w-[500px] lg:max-w-none flex justify-center lg:justify-end items-center">
            {/* Glow Effect */}
            <div className="absolute -inset-5 md:-inset-10 bg-blue-400/15 blur-[60px] md:blur-[100px] rounded-full animate-pulse"></div>
@@ -49,7 +49,7 @@ const Header = () => {
            <img 
             src={img1} 
             alt="Emotion Tracking AI" 
-            className="w-[85%] sm:w-full max-w-[400px] md:max-w-[600px] lg:max-w-[800px] h-auto z-10 drop-shadow-2xl animate-[float_4s_ease-in-out_infinite]" 
+            className="w-[82%] sm:w-full max-w-[340px] md:max-w-[520px] lg:max-w-[680px] h-auto z-10 drop-shadow-2xl animate-[float_4s_ease-in-out_infinite]" 
           />
         </div>
       </div>

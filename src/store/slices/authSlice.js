@@ -166,6 +166,17 @@ const authSlice = createSlice({
     setError: (state, action) => {
       state.error = getErrorMessage(action.payload, 'Something went wrong');
     },
+    updateCurrentUser: (state, action) => {
+      state.user = {
+        ...state.user,
+        ...action.payload,
+      };
+      state.role = state.user?.role || state.role;
+      localStorage.setItem('user', JSON.stringify(state.user));
+      if (state.role) {
+        localStorage.setItem('userRole', state.role);
+      }
+    },
     clearPasswordMessages: (state) => {
       state.forgotPassword.message = '';
       state.forgotPassword.error = '';
@@ -254,5 +265,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setError, clearPasswordMessages } = authSlice.actions;
+export const { logout, clearError, setError, updateCurrentUser, clearPasswordMessages } = authSlice.actions;
 export default authSlice.reducer;

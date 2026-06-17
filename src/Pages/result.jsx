@@ -70,7 +70,7 @@ const Result = () => {
     >
       <Navbar />
 
-      <main className="relative z-10 flex-grow flex items-center justify-center px-4 py-32">
+      <main className="relative z-10 flex-grow flex items-center justify-center px-4 py-38">
         <div className="w-full max-w-[900px] bg-white/40 backdrop-blur-3xl border border-white/40 rounded-[40px] p-4 md:p-8 shadow-2xl flex flex-col gap-6">
           {!result && !loading ? (
             <div className="bg-white/85 rounded-[28px] p-8 shadow-sm border border-white/50 text-center">

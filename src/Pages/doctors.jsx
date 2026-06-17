@@ -1,71 +1,171 @@
-import React, { useState } from 'react';
-import Navbar from '../Component/Navbar'; 
-import Footer from '../Component/Footer'; 
-import bg from '../assets/bg.jpeg'; 
-import Doctor from "../assets/doctor.png"; 
+import React, { useEffect, useMemo, useState } from 'react';
+import Navbar from '../Component/Navbar';
+import Footer from '../Component/Footer';
+import bg from '../assets/bg.jpeg';
+import Doctor from "../assets/doctor.png";
+import api from '../api';
+import {
+  HiOutlinePhone,
+  HiOutlineCheckCircle,
+  HiOutlineLocationMarker
+} from 'react-icons/hi';
+
+const fallbackSlots = ['10:00 AM - 11:00 AM', '12:00 PM - 01:00 PM', '04:00 PM - 05:00 PM']
+  .map((slot) => ({ label: slot, value: slot, booked: false }));
+
+const getSlotLabel = (slot) => {
+  if (typeof slot === 'string') return slot;
+  return slot.label || slot.timeSlot || `${slot.start} - ${slot.end}`;
+};
+
+const normalizeClockTime = (value) => {
+  const match = String(value || '').trim().toUpperCase().replaceAll('.', '').match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?$/);
+  if (!match) return String(value || '').trim();
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const meridiem = match[3];
+  if (meridiem === 'AM' && hour === 12) hour = 0;
+  if (meridiem === 'PM' && hour !== 12) hour += 12;
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
+
+const normalizeSlotValue = (slot) => {
+  const label = getSlotLabel(slot).replace(/\s*-\s*/, ' - ');
+  const parts = label.split(' - ');
+  if (parts.length !== 2) return label;
+  return `${normalizeClockTime(parts[0])} - ${normalizeClockTime(parts[1])}`;
+};
+
+const toSlotOption = (slot) => {
+  const label = getSlotLabel(slot);
+  return {
+    label,
+    value: normalizeSlotValue(slot),
+    booked: Boolean(slot.booked || slot.status === 'booked')
+  };
+};
+
+const cardAccents = [
+  { chip: 'bg-blue-50 text-blue-700', bar: 'bg-[#2F357D]', ring: 'ring-blue-100', soft: 'bg-blue-50' },
+  { chip: 'bg-emerald-50 text-emerald-700', bar: 'bg-emerald-600', ring: 'ring-emerald-100', soft: 'bg-emerald-50' },
+  { chip: 'bg-rose-50 text-rose-700', bar: 'bg-rose-500', ring: 'ring-rose-100', soft: 'bg-rose-50' },
+  { chip: 'bg-cyan-50 text-cyan-700', bar: 'bg-cyan-600', ring: 'ring-cyan-100', soft: 'bg-cyan-50' }
+];
+
+const getDoctorInitials = (name = 'Doctor') => {
+  const cleanName = name.replace(/^Dr\.\s*/i, '').trim();
+  return cleanName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'DR';
+};
+
+const getAvailableSlotCount = (doctor) => {
+  return (doctor?.availableDates || []).reduce((count, item) => {
+    return count + (item.slots || []).filter((slot) => !slot.booked).length;
+  }, 0);
+};
+
+const getWhatsAppNumber = (phone = '') => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('0')) return `92${digits.slice(1)}`;
+  return digits;
+};
 
 const Doctors = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ date: '', timeSlot: '', email: '' });
 
-  const doctors = [
-    { 
-      name: "Dr. Sarah Khan", 
-      role: "Senior Psychologist", 
-      img: Doctor, 
-      phone: "+92 300 1234567",
-      desc: "Specializing in cognitive behavioral therapy and emotional resilience." 
-    },
-    { 
-      name: "Dr. Ahmed Ali", 
-      role: "Clinical Therapist", 
-      img: Doctor, 
-      phone: "+92 321 7654321",
-      desc: "Expert in stress management, anxiety relief, and mindfulness practices." 
-    },
-    { 
-      name: "Dr. Ayrsha Malik", 
-      role: "Mental Health Expert", 
-      img: Doctor, 
-      phone: "+92 345 9876543",
-      desc: "Dedicated to helping individuals achieve mental clarity and life balance." 
-    },
-    { 
-      name: "Dr. Zainab Abbas", 
-      role: "Child Counselor", 
-      img: Doctor, 
-      phone: "+92 333 4445556",
-      desc: "Helping children and teens navigate developmental and emotional challenges." 
-    },
-    { 
-      name: "Dr. Hamza Siddiqui", 
-      role: "Behavioral Specialist", 
-      img: Doctor, 
-      phone: "+92 312 9998887",
-      desc: "Expert in analyzing and improving complex behavioral patterns in adults." 
-    },
-    { 
-      name: "Dr. Mariam Jameel", 
-      role: "Family Therapist", 
-      img: Doctor, 
-      phone: "+92 301 5556667",
-      desc: "Focusing on resolving conflicts and strengthening familial bonds." 
-    },
-  ];
+  useEffect(() => {
+    const loadDoctors = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/doctor/list');
+        setDoctors(response.data.doctors || []);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Doctors load nahi ho sakay.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDoctors();
+  }, []);
+
+  const availableDates = useMemo(() => selectedDoctor?.availableDates || [], [selectedDoctor]);
+  const selectedDate = form.date || availableDates[0]?.date || '';
+
+  const timeSlots = useMemo(() => {
+    if (!selectedDoctor) return fallbackSlots;
+    if (availableDates.length === 0) return [];
+
+    const exactDate = availableDates.find((item) => item.date === selectedDate);
+    const exactSlots = (exactDate?.slots || []).map(toSlotOption);
+    if (exactDate) return exactSlots;
+
+    const dayName = selectedDate
+      ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
+      : '';
+    const dayAvailability = (selectedDoctor.availability || []).find(
+      (item) => item.active && item.day === dayName
+    );
+    const slots = (dayAvailability?.slots || []).map(toSlotOption);
+
+    return slots.length ? slots : fallbackSlots;
+  }, [selectedDoctor, selectedDate, availableDates]);
+
+  const availableTimeSlots = useMemo(
+    () => timeSlots.filter((slot) => !slot.booked),
+    [timeSlots]
+  );
+  const selectedSlotValue = form.timeSlot || availableTimeSlots[0]?.value || '';
 
   const handleConsultClick = (doctor) => {
     setSelectedDoctor(doctor);
+    setForm({ date: '', timeSlot: '', email: '' });
+    setError('');
     setIsModalOpen(true);
   };
 
-  const handleConfirmBooking = (e) => {
+  const handleConfirmBooking = async (e) => {
     e.preventDefault();
-    setIsModalOpen(false);
-    setShowSuccess(true);
-    setTimeout(() => {
-        setShowSuccess(false);
-    }, 4000);
+
+    if (!selectedDoctor?.uid) {
+      setError('Doctor select nahi hua.');
+      return;
+    }
+    if (!selectedSlotValue) {
+      setError('Is date par koi available slot nahi hai.');
+      return;
+    }
+
+    try {
+      setBooking(true);
+      await api.post('/doctor/appointments', {
+        doctorId: selectedDoctor.uid,
+        date: selectedDate,
+        timeSlot: selectedSlotValue,
+        email: form.email
+      });
+      const response = await api.get('/doctor/list');
+      setDoctors(response.data.doctors || []);
+      setIsModalOpen(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 4000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Booking save nahi hui. Login karke dobara try karein.');
+    } finally {
+      setBooking(false);
+    }
   };
 
   return (
@@ -83,89 +183,188 @@ const Doctors = () => {
             <div className="w-24 h-2 bg-[#2F357D] rounded-full mt-2 shadow-lg shadow-blue-200"></div>
           </div>
 
-          {/* Grid: Ab ye naturally cards ko niche shift karta rahega */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {doctors.map((doc, idx) => (
-              <div key={idx} className="group bg-white/70 backdrop-blur-2xl rounded-[50px] shadow-2xl border border-white/80 flex flex-col transition-all duration-500 hover:-translate-y-3 hover:bg-white/90 overflow-hidden min-h-[600px]">
-                <div className="w-full relative bg-blue-50/30 border-b border-white/30" style={{ height: '300px' }}>
-                  <img src={doc.img} alt={doc.name} className="w-full h-full object-contain md:object-top transition-transform duration-700 group-hover:scale-105" />
-                </div>
+          {error && (
+            <div className="mb-8 bg-red-50 border border-red-100 text-red-600 rounded-2xl px-5 py-3 font-bold text-sm">
+              {error}
+            </div>
+          )}
 
-                <div className="p-8 flex flex-col items-center text-center flex-grow justify-between">
-                  <div className="space-y-4">
-                    <h4 className="font-black text-[#2F357D] text-2xl tracking-tight leading-tight">{doc.name}</h4>
-                    <p className="text-[10px] text-blue-500 font-black uppercase tracking-[0.2em] bg-blue-50 inline-block px-3 py-1 rounded-md">{doc.role}</p>
-                    
-                    {/* Stars hata diye hain yahan se */}
-                    
-                    <p className="text-sm text-slate-500 leading-relaxed font-medium">{doc.desc}</p>
-                    
-                    <div className="pt-4 space-y-2">
-                        <div className="flex items-center justify-center gap-2 text-[#2F357D] font-bold text-sm">
-                            <span className="bg-blue-100 p-1.5 rounded-full text-xs">📞</span>
-                            <span>{doc.phone}</span>
+          {loading ? (
+            <div className="bg-white/80 rounded-[40px] p-10 text-center font-bold text-[#2F357D]">
+              Loading doctors...
+            </div>
+          ) : doctors.length === 0 ? (
+            <div className="bg-white/80 rounded-[40px] p-10 text-center font-bold text-slate-500">
+              No doctors available yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {doctors.map((doc, index) => {
+                const accent = cardAccents[index % cardAccents.length];
+                const hasOpenSlots = getAvailableSlotCount(doc) > 0;
+                const whatsappNumber = getWhatsAppNumber(doc.phone);
+
+                return (
+                  <div key={doc.uid} className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/80 flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl overflow-hidden">
+                    <div className={`h-2 ${accent.bar}`}></div>
+                    <div className="relative px-6 pt-6">
+                      <div className={`absolute right-5 top-5 ${accent.chip} rounded-full px-3 py-1 text-[10px] font-black uppercase`}>
+                        {hasOpenSlots ? 'Available' : 'Booked'}
+                      </div>
+                      <div className={`${accent.soft} rounded-3xl h-44 flex items-end justify-center overflow-hidden ring-1 ${accent.ring}`}>
+                        <img src={Doctor} alt={doc.name} className="h-full w-full object-contain object-bottom transition-transform duration-500 group-hover:scale-105" />
+                      </div>
+                      <div className="absolute left-10 bottom-[-22px] w-14 h-14 rounded-2xl bg-white shadow-lg border border-slate-100 flex items-center justify-center">
+                        <span className="text-[#2F357D] font-black text-lg">{getDoctorInitials(doc.name)}</span>
+                      </div>
+                    </div>
+
+                    <div className="px-6 pt-10 pb-6 flex flex-col flex-grow">
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-left">
+                            <h4 className="font-black text-[#2F357D] text-2xl leading-tight">{doc.name}</h4>
+                            <p className={`mt-2 inline-flex items-center gap-1 ${accent.chip} text-[10px] font-black uppercase px-3 py-1 rounded-full`}>
+                              <HiOutlineCheckCircle className="text-sm" />
+                              {doc.role}
+                            </p>
+                          </div>
                         </div>
-                        <a 
-                            href={`https://wa.me/${doc.phone.replace(/\s+/g, '')}`} 
-                            target="_blank" 
+                        <p className="mt-4 text-sm text-slate-500 leading-relaxed font-medium text-left line-clamp-2">{doc.desc}</p>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3 space-y-2">
+                        <div className="flex items-center gap-3 text-sm text-slate-700 font-bold">
+                          <HiOutlineLocationMarker className="text-[#2F357D] shrink-0" />
+                          <span>{doc.clinicName || 'Clinic not provided'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-700 font-bold">
+                          <HiOutlinePhone className="text-[#2F357D] shrink-0" />
+                          <span>{doc.phone || 'Phone not provided'}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-6 flex gap-3">
+                        {whatsappNumber && (
+                          <a
+                            href={`https://wa.me/${whatsappNumber}`}
+                            target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 text-green-600 font-black text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+                            className="flex-1 border border-green-100 bg-green-50 text-green-700 text-[11px] font-black py-4 rounded-2xl text-center hover:bg-green-100 transition-colors uppercase"
+                          >
+                            WhatsApp
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleConsultClick(doc)}
+                          disabled={!hasOpenSlots}
+                          className="flex-[1.4] bg-[#2F357D] hover:bg-indigo-900 text-white text-[11px] font-black py-4 rounded-2xl shadow-lg shadow-blue-900/20 transition-all active:scale-95 uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <span className="text-base">💬</span> Chat on WhatsApp
-                        </a>
+                          Book Session
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <button 
-                    onClick={() => handleConsultClick(doc)}
-                    className="w-full mt-6 bg-[#2F357D] hover:bg-indigo-900 text-white text-xs font-black py-5 rounded-[28px] shadow-xl shadow-blue-900/20 transition-all active:scale-95 uppercase tracking-widest"
-                  >
-                    BOOK YOUR SESSION
-                    </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Booking Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#2F357D]/40 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
           <div className="relative bg-white/90 backdrop-blur-3xl w-full max-w-md rounded-[40px] shadow-2xl border border-white p-8 animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setIsModalOpen(false)} className="absolute right-6 top-6 text-[#2F357D] font-bold text-xl">✕</button>
+            <button onClick={() => setIsModalOpen(false)} className="absolute right-6 top-6 text-[#2F357D] font-bold text-xl">x</button>
             <h2 className="text-2xl font-black text-[#2F357D] mb-2">Book Appointment</h2>
             <p className="text-sm text-blue-600 font-bold mb-6">with {selectedDoctor?.name}</p>
             <form className="space-y-5" onSubmit={handleConfirmBooking}>
               <div>
                 <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Select Date</label>
-                <input required type="date" className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Select Time Slot</label>
-                <select className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium">
-                  <option>10:00 AM - 11:00 AM</option>
-                  <option>12:00 PM - 01:00 PM</option>
-                  <option>04:00 PM - 05:00 PM</option>
+                <select
+                  required
+                  value={selectedDate}
+                  onChange={(e) => setForm({ ...form, date: e.target.value, timeSlot: '' })}
+                  className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium"
+                >
+                  {availableDates.length === 0 ? (
+                    <option value="">No available dates</option>
+                  ) : availableDates.map((item) => (
+                    <option key={item.date} value={item.date}>
+                      {item.label} ({item.day})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Your Email</label>
-                <input required type="email" placeholder="example@mail.com" className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium" />
+                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Select Time Slot</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {timeSlots.map((slot) => {
+                    const selected = selectedSlotValue === slot.value;
+                    return (
+                      <button
+                        key={slot.value}
+                        type="button"
+                        disabled={slot.booked}
+                        onClick={() => setForm({ ...form, timeSlot: slot.value })}
+                        className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left font-bold transition-all ${
+                          slot.booked
+                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                            : selected
+                              ? 'bg-[#2F357D] text-white border-[#2F357D] shadow-md'
+                              : 'bg-white text-[#2F357D] border-blue-100 hover:border-[#2F357D]'
+                        }`}
+                      >
+                        <span>{slot.label}</span>
+                        <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full ${
+                          slot.booked
+                            ? 'bg-white text-red-500 border border-red-100'
+                            : selected
+                              ? 'bg-white/20 text-white'
+                              : 'bg-green-50 text-green-600 border border-green-100'
+                        }`}>
+                          {slot.booked ? 'Booked' : 'Available'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {timeSlots.length === 0 && (
+                    <div className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 text-[#2F357D] font-medium">
+                      No slots available
+                    </div>
+                  )}
+                  {timeSlots.length > 0 && availableTimeSlots.length === 0 && (
+                    <div className="rounded-2xl bg-red-50 border border-red-100 px-4 py-3 text-sm font-bold text-red-600">
+                      All slots are booked for this date.
+                    </div>
+                  )}
+                </div>
               </div>
-              <button type="submit" className="w-full bg-[#2F357D] text-white font-black py-4 rounded-[22px] shadow-lg hover:bg-blue-800 transition-all mt-4">CONFIRM BOOKING</button>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Your Email</label>
+                <input
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="example@mail.com"
+                  className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium"
+                />
+              </div>
+              <button disabled={booking || availableDates.length === 0 || availableTimeSlots.length === 0} type="submit" className="w-full bg-[#2F357D] text-white font-black py-4 rounded-[22px] shadow-lg hover:bg-blue-800 transition-all mt-4 disabled:opacity-60">
+                {booking ? 'SAVING...' : 'CONFIRM BOOKING'}
+              </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Success Popup */}
       {showSuccess && (
         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] w-[90%] max-w-sm bg-white/95 backdrop-blur-xl border border-green-200 p-6 rounded-[30px] shadow-2xl flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mb-4">✅</div>
-            <h3 className="font-black text-[#2F357D] text-xl">Booking Requested!</h3>
-            <p className="text-sm text-slate-500 font-medium mt-1">An email confirmation will be sent shortly.</p>
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mb-4">OK</div>
+          <h3 className="font-black text-[#2F357D] text-xl">Booking Requested!</h3>
+          <p className="text-sm text-slate-500 font-medium mt-1">Appointment Firebase me save ho gai hai.</p>
         </div>
       )}
 

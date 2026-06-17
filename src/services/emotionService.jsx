@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Base URL for emotion detection API
 const API_ROOT = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-const EMOTION_API = API_ROOT.endsWith('/emotion') ? API_ROOT : `${API_ROOT}/emotion`;
-const LEGACY_EMOTION_API = API_ROOT.endsWith('/emotion') ? API_ROOT.replace(/\/emotion$/, '') : API_ROOT;
+const EMOTION_API = API_ROOT.endsWith('/emotion') ? API_ROOT.replace(/\/emotion$/, '') : API_ROOT;
+const LEGACY_EMOTION_API = API_ROOT.endsWith('/emotion') ? API_ROOT : `${API_ROOT}/emotion`;
 
 const withEmotionRouteFallback = async (request) => {
   try {

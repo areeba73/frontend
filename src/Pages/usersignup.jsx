@@ -81,7 +81,7 @@ const UserSignup = () => {
     >
       <div className="w-full max-w-[950px] flex flex-col md:flex-row bg-white/70 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/80 overflow-hidden">
         
-        <div className="w-full md:w-[58%] p-6 md:p-10 overflow-y-auto max-h-[90vh]">
+        <div className="w-full md:w-[58%] p-6 md:p-10">
           <div className="mb-6">
             <img src={logoImg} alt="EmoTrack Logo" className="w-40 h-auto object-contain" />
           </div>

@@ -1,4 +1,3 @@
-// DoctorSignup.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -95,9 +94,8 @@ const DoctorSignup = () => {
     const resultAction = await dispatch(registerDoctor(formData));
 
     if (registerDoctor.fulfilled.match(resultAction)) {
-      // ✅ Role already saved in authSlice
       alert("Doctor Account created! Please check email for verification.");
-      navigate('/auth'); // ✅ Go to AuthHandler for email verification
+      navigate('/auth'); //AuthHandler for email verification
     } else {
       console.log("Registration failed");
     }
@@ -110,7 +108,7 @@ const DoctorSignup = () => {
     >
       <div className="w-full max-w-[950px] flex flex-col md:flex-row bg-white/70 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/80 overflow-hidden">
         
-        <div className="w-full md:w-[58%] p-6 md:p-10 overflow-y-auto max-h-[90vh]">
+        <div className="w-full md:w-[58%] p-6 md:p-10">
           <div className="mb-6">
             <img src={logoImg} alt="EmoTrack Logo" className="w-40 h-auto object-contain" />
           </div>
@@ -131,7 +129,6 @@ const DoctorSignup = () => {
           )}
           
           <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-            {/* Full Name */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Full Name
@@ -154,7 +151,6 @@ const DoctorSignup = () => {
               )}
             </div>
 
-            {/* Speciality */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Speciality
@@ -177,7 +173,6 @@ const DoctorSignup = () => {
               )}
             </div>
 
-            {/* Clinic Name */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Clinic Name
@@ -200,7 +195,6 @@ const DoctorSignup = () => {
               )}
             </div>
 
-            {/* Mobile */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Mobile Number
@@ -223,7 +217,6 @@ const DoctorSignup = () => {
               )}
             </div>
 
-            {/* Email */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Email Address
@@ -246,7 +239,6 @@ const DoctorSignup = () => {
               )}
             </div>
 
-            {/* Password */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#2F357D] ml-1 uppercase tracking-wider">
                 Password

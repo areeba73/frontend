@@ -18,7 +18,7 @@ const Section5 = () => {
 
   return (
     /* Responsive margins and padding */
-    <div className="w-full py-6 md:py-4 -mt-5 px-4 md:px-10 font-sans flex justify-center overflow-hidden">
+    <div className="w-full px-0 md:px-10 font-sans flex justify-center overflow-hidden">
       
       {/* Animated Main Section */}
       <motion.section 
@@ -27,7 +27,7 @@ const Section5 = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         /* Mobile pe py-12 aur rounded-3xl, Desktop pe py-16 aur rounded-40px */
-        className="w-full max-w-6xl bg-[#2F357D] backdrop-blur-xl py-12 md:py-16 px-6 md:px-8 rounded-[30px] md:rounded-[40px] text-white border border-white/10 relative overflow-hidden"
+        className="w-full max-w-6xl bg-[#2F357D] backdrop-blur-xl py-10 md:py-14 px-6 md:px-8 rounded-[30px] md:rounded-[40px] text-white border border-white/10 relative overflow-hidden"
       >
         
         {/* Decorative Glows - Adjusted for mobile */}
@@ -40,7 +40,7 @@ const Section5 = () => {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-3 md:gap-4 mb-10 md:mb-16"
+            className="flex items-center justify-center gap-3 md:gap-4 mb-8 md:mb-12"
           >
             <div className="h-[1px] w-8 md:w-20 bg-white/20"></div>
             <h2 className="text-sm md:text-2xl font-semibold tracking-[0.15em] md:tracking-[0.2em] uppercase text-center">

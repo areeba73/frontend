@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import Navbar from '../Component/Navbar';
-import Footer from '../Component/Footer';
 import bg from "../assets/bg.jpeg";
-import { LogOut, Calendar, Clock,  } from 'lucide-react'; 
+import { LogOut, Calendar, Clock, Settings, Trash2 } from 'lucide-react'; 
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { logout } from '../store/slices/authSlice';
+import { Link, useNavigate } from 'react-router-dom';
+import { logout, updateCurrentUser } from '../store/slices/authSlice';
 import { fetchEmotionHistory } from '../store/slices/emotionSlice';
+import api from '../api';
+import logo from '../assets/LOGO.png';
+
 
 const moodConfig = {
   happy: { label: "Happy", emoji: "😊" },
@@ -26,6 +27,33 @@ const moodColors = {
   fear: "bg-[#2F357D]/80",
   surprise: "bg-[#2F357D]/80",
   disgust: "bg-[#2F357D]/80"
+};
+
+const appointmentStatusConfig = {
+  pending: {
+    label: 'Pending',
+    className: 'bg-yellow-100 text-yellow-700 border-yellow-200'
+  },
+  approved: {
+    label: 'Approved',
+    className: 'bg-green-100 text-green-700 border-green-200'
+  },
+  accepted: {
+    label: 'Approved',
+    className: 'bg-green-100 text-green-700 border-green-200'
+  },
+  rejected: {
+    label: 'Rejected',
+    className: 'bg-red-100 text-red-700 border-red-200'
+  },
+  declined: {
+    label: 'Rejected',
+    className: 'bg-red-100 text-red-700 border-red-200'
+  },
+  cancelled: {
+    label: 'Cancelled',
+    className: 'bg-amber-100 text-amber-700 border-amber-200'
+  }
 };
 
 const emotionRisk = {
@@ -48,15 +76,95 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { history, loading } = useSelector((state) => state.emotions);
+  const [activeView, setActiveView] = useState('dashboard');
+  const [showPassword, setShowPassword] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [userData, setUserData] = useState({
+    fullName: user?.fullName || user?.name || '',
+    email: user?.email || '',
+    password: ''
+  });
   const [showAllReflections, setShowAllReflections] = useState(false);
+  const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
     dispatch(fetchEmotionHistory({ days: 7 }));
   }, [dispatch]);
 
+  useEffect(() => {
+    setUserData((prev) => ({
+      ...prev,
+      fullName: user?.fullName || user?.name || '',
+      email: user?.email || ''
+    }));
+  }, [user]);
+
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const response = await api.get('/user/appointments');
+        setAppointments(response.data.appointments || []);
+      } catch (err) {
+        console.error('Appointments load error:', err.response?.data?.error || err.message);
+      }
+    };
+
+    loadAppointments();
+  }, []);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/');
+  };
+
+  const handleDeleteAppointment = async (id) => {
+    try {
+      await api.delete(`/user/appointments/${id}`);
+      setAppointments((prev) => prev.filter((appointment) => appointment.id !== id));
+    } catch (err) {
+      console.error('Appointment delete error:', err.response?.data?.error || err.message);
+    }
+  };
+
+  const showProfileMessage = (text, isError = false) => {
+    setProfileMessage(isError ? '' : text);
+    setProfileError(isError ? text : '');
+    window.setTimeout(() => {
+      setProfileMessage('');
+      setProfileError('');
+    }, 3500);
+  };
+
+  const saveProfile = async () => {
+    const fullName = userData.fullName.trim();
+    const password = userData.password.trim();
+
+    if (fullName.length < 3) {
+      showProfileMessage('Full name must be at least 3 characters.', true);
+      return;
+    }
+    if (password && password.length < 6) {
+      showProfileMessage('Password must be at least 6 characters.', true);
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const payload = { fullName };
+      if (password) payload.password = password;
+
+      const response = await api.post(`/user/profile/${user.uid}`, payload);
+      const updatedUser = response.data.user;
+      dispatch(updateCurrentUser(updatedUser));
+      setUserData((prev) => ({ ...prev, password: '' }));
+      showProfileMessage('Profile updated successfully.');
+    } catch (err) {
+      showProfileMessage(err.response?.data?.error || 'Profile update nahi hui.', true);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const moodData = useMemo(() => {
@@ -145,16 +253,7 @@ const UserDashboard = () => {
     };
   }, [history]);
 
-  // Appointment Data (Email-based)
-  const upcomingAppointments = [
-  { 
-    doctor: "Dr. Sarah Ahmed", 
-    specialty: "Psychologist", 
-    date: "April 25, 2024", 
-    time: "10:30 AM",
-    status: "pending" // Ya "approved"
-  }
-];
+  const upcomingAppointments = appointments;
 
   return (
     <div className="min-h-screen relative font-sans text-blue-900 overflow-x-hidden">
@@ -163,19 +262,93 @@ const UserDashboard = () => {
         <div className="absolute inset-0 bg-white/40 backdrop-blur-md"></div>
       </div>
 
-      <Navbar />
+      <div className="pt-8 px-4 md:px-10 lg:px-20 max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+        <Link to="/" className="flex items-center z-[1100] w-fit">
+          <img src={logo} alt="EmoTrack Logo" className="h-[50px] md:h-[55px]" />
+        </Link>
+        <button
+          type="button"
+          onClick={() => setActiveView(activeView === 'settings' ? 'dashboard' : 'settings')}
+          className={`flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-2xl text-xs md:text-sm font-bold transition-all shadow-lg ${activeView === 'settings' ? 'bg-[#2F357D] text-white' : 'bg-[#2F357D] text-white hover:bg-white hover:text-[#2F357D]'}`}
+        >
+          <span>{activeView === 'settings' ? 'Back to Dashboard' : 'Account Settings'}</span>
+        </button>
+      </div>
 
-      <main className="pt-24 md:pt-32 pb-24 px-4 md:px-10 lg:px-20 max-w-[1600px] mx-auto animate-fadeIn">
+      <main className="pt-10 pb-24 px-4 md:px-10 lg:px-20 max-w-[1600px] mx-auto animate-fadeIn">
+        {(profileMessage || profileError) && (
+          <div className={`mb-5 rounded-2xl px-5 py-3 text-sm font-bold shadow-sm ${profileError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+            {profileError || profileMessage}
+          </div>
+        )}
         
-        {/* HEADER */}
-        <div className="text-center md:text-left mb-10">
+        <div className="text-center md:text-left mb-10 pt-6">
           <h2 className="text-3xl md:text-5xl font-extrabold text-[#2F357D] tracking-tight">
             Welcome back, {user?.fullName || user?.name || 'User'} <span className="inline-block animate-bounce">😊</span>
           </h2>
           <p className="text-[#2F357D] mt-2 font-medium">Your emotional insights dashboard</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
+        {activeView === 'settings' && (
+          <div className="bg-white/80 rounded-[2.5rem] p-8 md:p-10 shadow-2xl border border-white animate-fadeIn max-w-2xl mx-auto">
+            <h2 className="text-3xl font-black text-[#2F357D] mb-8 text-center">Account Settings</h2>
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-blue-900/60 ml-2 uppercase tracking-widest">Full Name</label>
+                <input
+                  type="text"
+                  value={userData.fullName}
+                  onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
+                  className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-[#2F357D] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-blue-900/60 ml-2 uppercase tracking-widest">Email Address</label>
+                <input
+                  type="email"
+                  value={userData.email}
+                  disabled
+                  className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-blue-900/60 ml-2 uppercase tracking-widest">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={userData.password}
+                    placeholder="Leave blank to keep current password"
+                    onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+                    className="w-full mt-1 px-5 py-4 pr-20 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-[#2F357D] text-xs font-black"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 space-y-4">
+                <button
+                  type="button"
+                  onClick={saveProfile}
+                  disabled={savingProfile}
+                  className="w-full py-4 bg-[#2F357D] text-white rounded-2xl font-bold text-sm shadow-lg hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-60"
+                >
+                  {savingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`${activeView === 'settings' ? 'hidden' : 'grid'} grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-stretch`}>
           
           {/* CHART SECTION */}
           <div className="lg:col-span-2 bg-white/70 backdrop-blur-2xl rounded-[2.5rem] p-6 md:p-10 shadow-2xl border border-white/50 flex flex-col">
@@ -238,7 +411,13 @@ const UserDashboard = () => {
           <div className="lg:col-span-3 mt-8">
             <h3 className="text-2xl font-bold mb-6 text-[#2F357D] px-2">Booked Appointment</h3>
             {upcomingAppointments.length > 0 ? (
-              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-blue-200 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-5">
+                {upcomingAppointments.map((appointment) => {
+                  const status = (appointment.status || 'pending').toLowerCase();
+                  const statusConfig = appointmentStatusConfig[status] || appointmentStatusConfig.pending;
+
+                  return (
+              <div key={appointment.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-blue-200 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-5">
                   <div className="w-16 h-16 bg-[#2F357D] rounded-2xl flex items-center justify-center text-white shadow-lg">
                     <Calendar size={32} />
@@ -246,29 +425,40 @@ const UserDashboard = () => {
                   
                   <div>
                     
-                    <h4 className="text-xl font-bold text-[#2F357D]">{upcomingAppointments[0].doctor}</h4>
-                    <p className="text-sm text-blue-600 font-semibold">{upcomingAppointments[0].specialty}</p>
+                    <h4 className="text-xl font-bold text-[#2F357D]">{appointment.doctor}</h4>
+                    <p className="text-sm text-blue-600 font-semibold">{appointment.specialty}</p>
                   </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-4 justify-center items-center">
                   <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
                     <Calendar size={16} className="text-[#2F357D]" />
-                    <span className="text-sm font-bold text-[#2F357D]">{upcomingAppointments[0].date}</span>
+                    <span className="text-sm font-bold text-[#2F357D]">{appointment.date}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
                     <Clock size={16} className="text-[#2F357D]" />
-                    <span className="text-sm font-bold text-[#2F357D]">{upcomingAppointments[0].time}</span>
+                    <span className="text-sm font-bold text-[#2F357D]">{appointment.time}</span>
                   </div>
-                  <div className={`px-4 py-1 rounded-full text-xs font-bold border ${
-    upcomingAppointments[0].status === 'approved' 
-    ? 'bg-green-100 text-green-700 border-green-200' 
-    : 'bg-yellow-100 text-yellow-700 border-yellow-200'
-  }`}>
-    {upcomingAppointments[0].status === 'approved' ? '● Approved' : '○ Pending'}
-  </div>
+                  <div className={`px-4 py-1 rounded-full text-xs font-bold border ${statusConfig.className}`}>
+                    <span>{statusConfig.label}</span>
+                    <span className="hidden">
+    {appointment.status === 'approved' ? '● Approved' : '○ Pending'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAppointment(appointment.id)}
+                    className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-xl border border-red-100 text-xs font-bold hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                    title="Delete appointment"
+                  >
+                    <Trash2 size={15} />
+                    Delete
+                  </button>
                  
                 </div>
+              </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center p-10 bg-white/40 rounded-[2.5rem] border-2 border-dashed border-blue-200">
@@ -321,8 +511,6 @@ const UserDashboard = () => {
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-in-out whitespace-nowrap">Logout</span>
         <LogOut size={20} />
       </button>
-
-      <Footer />
 
       <style>{`
         @keyframes slideUp { from { height: 0; opacity: 0; } to { opacity: 1; } }

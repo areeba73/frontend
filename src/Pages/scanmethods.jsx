@@ -366,7 +366,7 @@ const ScanMethods = () => {
     >
       <Navbar />
 
-      <main className="relative z-10 pt-48 pb-20">
+      <main className="relative z-10 pt-43 pb-20">
         <div className="max-w-[1200px] mx-auto px-8 md:px-12">
           <div className="mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-[#2F357D] mb-4 tracking-tight">
@@ -387,7 +387,7 @@ const ScanMethods = () => {
             {methods.map((item) => (
               <div key={item.id}>
                 <div
-                  className="bg-white/60 backdrop-blur-2xl border border-white p-8 rounded-[40px] shadow-xl flex flex-col items-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer"
+                  className="bg-white/60 backdrop-blur-2xl border border-white p-7 rounded-[40px] shadow-xl flex flex-col items-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer"
                   onClick={() => setSelectedMethod(selectedMethod === item.id ? null : item.id)}
                 >
                   <h3 className="text-[#2F357D] text-xl font-semibold mb-8">{item.title}</h3>

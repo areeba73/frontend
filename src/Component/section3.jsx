@@ -1,9 +1,9 @@
 import React from 'react';
 
 const StepCard = ({ number, title, desc, active }) => (
-  <div className={`relative p-9  rounded-[35px] transition-all duration-500 hover:-translate-y-2 flex flex-col items-center text-center
+  <div className={`relative h-full min-h-[290px] p-6 md:p-8 rounded-[28px] md:rounded-[35px] transition-all duration-500 hover:-translate-y-2 flex flex-col items-center text-center
     ${active 
-      ? 'bg-gradient-to-br bg-[#2F357D] text-white shadow-2xl scale-105 z-10' 
+      ? 'bg-gradient-to-br bg-[#2F357D] text-white shadow-2xl z-10' 
       : 'bg-transparent backdrop-blur-md border border-white/80 text-slate-800 shadow-lg'}`}>
     
     {/* Step Number Badge */}
@@ -47,15 +47,15 @@ const Section3 = () => {
   ];
 
   return (
-    <section className="py-14 pt-2 px-4 max-w-7xl mx-auto">
+    <section className="py-10 md:py-12 px-0 sm:px-4 max-w-7xl mx-auto">
       {/* Heading (Increased to 4xl) */}
-      <div className="flex items-center justify-center gap-6 mb-16 text-center">
-        <div className="h-[1px] w-16 bg-[#2F357D]"></div>
-        <h2 className="text-4xl font-extrabold text-[#2F357D] tracking-tight">How EmoTrack Works</h2>
-        <div className="h-[1px] w-16 bg-[#2F357D]"></div>
+      <div className="flex items-center justify-center gap-4 md:gap-6 mb-10 md:mb-12 text-center">
+        <div className="hidden sm:block h-[1px] w-12 md:w-16 bg-[#2F357D]"></div>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-[#2F357D] tracking-tight">How EmoTrack Works</h2>
+        <div className="hidden sm:block h-[1px] w-12 md:w-16 bg-[#2F357D]"></div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
         {steps.map((step, index) => (
           <StepCard 
             key={index}

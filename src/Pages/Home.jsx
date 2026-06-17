@@ -14,9 +14,9 @@ function Home() {
   return (
     <div className="relative min-h-screen">
       <Navbar />
-      <div className="min-h-screen bg-cover bg-fixed bg-center" style={{ backgroundImage: `url(${bg})` }}>
+      <div className="min-h-screen bg-cover bg-scroll md:bg-fixed bg-center" style={{ backgroundImage: `url(${bg})` }}>
         <div className="bg-white/30 backdrop-blur-[2px] min-h-screen">
-          <main className="max-w-7xl mx-auto px-4 pt-32 md:pt-40 space-y-20 pb-20">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 md:pt-28 lg:pt-32 space-y-10 sm:space-y-12 lg:space-y-16 pb-12 lg:pb-16">
             
             <Header />
             <Section3 />

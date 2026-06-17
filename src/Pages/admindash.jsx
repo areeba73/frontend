@@ -13,7 +13,7 @@ import {
 } from '../store/slices/adminSlice';
 import bg from "../assets/bg.jpeg";
 import { Link } from 'react-router-dom'; 
-import logo from '../assets/logo.png'; 
+import logo from '../assets/LOGO.png';
 import { LogOut } from 'lucide-react'; 
 
 const AdminDashboard = () => {
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
             onClick={() => setActiveView(activeView === 'settings' ? 'dashboard' : 'settings')}
             className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${activeView === 'settings' ? 'bg-blue-100 text-blue' : 'bg-[#2F357D] text-white hover:bg-white hover:text-[#2F357D]'}`}
           >
-            {activeView === 'settings' ? 'Back to Dashboard' : '⚙️ Account Settings'}
+            {activeView === 'settings' ? 'Back to Dashboard' : 'Account Settings'}
           </button>
         </div>
 
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
             {/* SETTINGS */}
             {activeView === 'settings' && (
               <div className="bg-white/80 rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-white animate-fadeIn max-w-2xl mx-auto">
-                <h2 className="text-3xl font-black text-blue-950 mb-8 text-center">⚙️ Account Settings</h2>
+                <h2 className="text-3xl font-black text-[#2F357D] mb-8 text-center">Account Settings</h2>
                 
                 <div className="space-y-6">
                   <div>
@@ -229,7 +229,7 @@ const AdminDashboard = () => {
                       type="text" 
                       value={adminData.name}
                       onChange={(e) => setAdminData({...adminData, name: e.target.value})}
-                      className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-[#2F357D] focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
 
@@ -252,12 +252,7 @@ const AdminDashboard = () => {
                       {loading ? 'Saving...' : 'Save Changes'}
                     </button>
 
-                    <Link 
-                      to="/forget" 
-                      className=" w-full py-2 text-center text-blue-600 font-bold text-xs hover:underline  rounded-2xl  transition-all"
-                    >
-                     Forgot Password?
-                    </Link>
+                   
                   </div>
                 </div>
               </div>

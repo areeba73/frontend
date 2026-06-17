@@ -6,12 +6,12 @@ import { Sparkles, ArrowRight } from 'lucide-react';
 const Section8 = () => {
   return (
     // Responsive padding logic
-    <div className="w-full flex flex-col items-center justify-center pt-8 pb-4 md:pb-0 px-4 md:px-6 font-sans overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-center px-0 sm:px-4 md:px-6 pt-4 md:pt-6 pb-4 font-sans overflow-hidden">
       
       <div className="relative group max-w-3xl w-full">
         
         {/* Floating Heart Icon - Responsive positioning */}
-        <div className="absolute -top-6 -right-2 md:-top-5 md:-right-10 animate-bounce transition-transform duration-1000 z-20">
+        <div className="absolute -top-6 -right-2 md:-top-1 md:-right-10 animate-bounce transition-transform duration-1000 z-20">
           <span className="text-4xl md:text-6xl">
             💙
           </span>

@@ -29,9 +29,9 @@ const Section4 = () => {
   ];
 
   return (
-    <section className="text-center px-6 pt-2 pb-10 -mt-6 max-w-7xl mx-auto overflow-hidden">
+    <section className="text-center px-0 sm:px-6 py-10 md:py-12 max-w-7xl mx-auto overflow-hidden">
       {/* Heading - Adjusted for Mobile */}
-      <div className="flex items-center justify-center gap-4 md:gap-6 mb-10 md:mb-12">
+      <div className="flex items-center justify-center gap-4 md:gap-6 mb-8 md:mb-10">
         <div className="hidden sm:block h-[1px] w-12 md:w-16 bg-[#2F357D]/30"></div>
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#2F357D] tracking-tight">
           Why Choose <span className="text-blue-500 md:text-[#2F357D]">EmoTrack?</span>
