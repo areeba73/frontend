@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/slices/authSlice';  
+import { logout, updateCurrentUser } from '../store/slices/authSlice';  
 import { useNavigate } from 'react-router-dom'; 
 import { 
   fetchAdminProfile,
@@ -24,10 +24,12 @@ const AdminDashboard = () => {
   
   const [activeTab, setActiveTab] = useState('users');
   const [activeView, setActiveView] = useState('dashboard');
+  const [showPassword, setShowPassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [adminData, setAdminData] = useState({
     name: '',
-    email: ''
+    email: '',
+    password: ''
   });
 
   // Fetch admin profile on mount
@@ -43,39 +45,53 @@ const AdminDashboard = () => {
   // Update local state when profile loads
   useEffect(() => {
     if (adminProfile && adminProfile.name) {
-      setAdminData({
+      setAdminData((prev) => ({
+        ...prev,
         name: adminProfile.name || '',
-        email: adminProfile.email || ''
-      });
+        email: adminProfile.email || '',
+        password: ''
+      }));
     }
   }, [adminProfile]);
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to remove this record?")) {
-      if (activeTab === 'users') {
-        dispatch(deleteUser(id));
-      } else {
-        dispatch(deleteDoctor(id));
-      }
+    if (activeTab === 'users') {
+      dispatch(deleteUser(id));
+    } else {
+      dispatch(deleteDoctor(id));
     }
   };
 
   const handleLogout = () => {  
-    if (window.confirm("Are you sure you want to logout?")) {
-      dispatch(logout());
-      navigate('/');
-    }
+    dispatch(logout());
+    navigate('/');
   };
 
   const handleSaveSettings = () => {
+    const name = adminData.name.trim();
+    const password = adminData.password.trim();
+
+    if (name.length < 3) {
+      alert('Admin name must be at least 3 characters.');
+      return;
+    }
+
+    if (password && password.length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
+    const profileData = { name };
+    if (password) profileData.password = password;
+
     dispatch(updateAdminProfile({
       adminId: user.uid,
-      profileData: {
-        name: adminData.name,
-        email: adminData.email
-      }
+      profileData
     })).then((result) => {
       if (result.type === updateAdminProfile.fulfilled.type) {
+        const updatedAdmin = result.payload.admin || result.payload;
+        dispatch(updateCurrentUser(updatedAdmin));
+        setAdminData((prev) => ({ ...prev, password: '' }));
         alert('Settings Updated Successfully!');
         setActiveView('dashboard');
       }
@@ -238,9 +254,29 @@ const AdminDashboard = () => {
                     <input 
                       type="email" 
                       value={adminData.email}
-                      onChange={(e) => setAdminData({...adminData, email: e.target.value})}
-                      className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      disabled
+                      className="w-full mt-1 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-blue-900/60 ml-2 uppercase tracking-widest">New Password</label>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? 'text' : 'password'}
+                        value={adminData.password}
+                        placeholder="Leave blank to keep current password"
+                        onChange={(e) => setAdminData({...adminData, password: e.target.value})}
+                        className="w-full mt-1 px-5 py-4 pr-20 bg-blue-50 border border-blue-100 rounded-2xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-[#2F357D] text-xs font-black"
+                      >
+                        {showPassword ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="pt-6 space-y-4">

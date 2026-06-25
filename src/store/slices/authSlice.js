@@ -2,6 +2,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api';
 const getErrorMessage = (error, fallback) => {
+  if (error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '')) {
+    return 'Login request timed out. Please check your internet connection and try again.';
+  }
+
   const payload = error?.response?.data?.error || error?.response?.data || error;
 
   if (typeof payload === 'string') return payload;

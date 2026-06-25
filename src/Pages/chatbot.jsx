@@ -10,57 +10,8 @@ const Chatbot = () => {
 
   const chatEndRef = useRef(null);
 const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
-  const moodFallback = (emotionContext) => {
-    const emotion = (emotionContext?.emotion || "").toLowerCase();
-    const severity = (emotionContext?.severity_level || "").toLowerCase();
-
-    if (severity === "high") {
-      return "Aap pehle 3 slow saans lein aur apne shoulders relax karein. Abhi sab se zyada pressure kis baat ka hai?";
-    }
-
-    if (["surprise", "surprised"].includes(emotion)) {
-      return "Lagta hai kuch unexpected hua hai. Yeh surprise positive tha ya thora stressful?";
-    }
-
-    if (["sad", "sadness"].includes(emotion)) {
-      return "Mujhe lagta hai aap thora heavy feel kar rahe hain. Kis baat ne dil par zyada asar kiya?";
-    }
-
-    if (["angry", "anger"].includes(emotion)) {
-      return "Aap thora pause lein aur jaw relax karein. Kis cheez ne aap ko trigger kiya?";
-    }
-
-    if (["fear", "fearful"].includes(emotion)) {
-      return "Aap apne around 3 cheezen notice karein jo safe lagti hain. Kis baat ka dar zyada hai?";
-    }
-
-    if (["happy", "joy"].includes(emotion)) {
-      return "Yeh acha lag raha hai ke mood light hai. Is feeling ko thora enjoy karein, kya cheez ne smile di?";
-    }
-
-    if (emotion === "neutral") {
-      return "Aap ka mood abhi balanced lag raha hai. Chhota sa walk ya paani ka break helpful ho sakta hai.";
-    }
-
-    return "Main aap ke sath hoon. Ek slow saans lein, abhi sab se zyada kya feel ho raha hai?";
-  };
-
-  const cleanBotText = (text, emotionContext = null) => {
-    const fallback = moodFallback(emotionContext);
-    if (!text) return fallback;
-
-    const hasHindi = /[\u0900-\u097F]/.test(text);
-    const genericAiReply = /as an ai|i don't have feelings|i do not have feelings|physical state like humans|how can i help you today/i.test(text);
-    const modelBusy = /high demand|overloaded|temporarily unavailable|spikes in demand/i.test(text);
-    if (modelBusy) return "EmoBot is busy right now. Please try again in a moment.";
-    if (hasHindi || genericAiReply) return fallback;
-
-    const compact = text.replace(/\s+/g, " ").trim();
-    const twoSentences = compact.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
-    const words = twoSentences.split(/\s+/);
-
-    if (words.length <= 35) return twoSentences;
-    return words.slice(0, 35).join(" ").replace(/[.,;:]$/, "") + ".";
+  const formatBotText = (text) => {
+    return String(text || "EmoBot is busy right now. Please try again in a moment.").trim();
   };
 
   useEffect(() => {
@@ -84,7 +35,7 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
           // Convert backend format to UI format
           const formattedMessages = data.history.flatMap(chat => [
             { type: "user", text: chat.user_message, id: chat.id },
-            { type: "bot", text: cleanBotText(chat.bot_response, chat.emotion_context), id: chat.id + "_bot" }
+            { type: "bot", text: formatBotText(chat.bot_response), id: chat.id + "_bot" }
           ]);
           setMessages(formattedMessages);
         } else {
@@ -125,9 +76,10 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
 
   // SEND MESSAGE TO GEMINI
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    const outgoingMessage = input.trim();
+    if (!outgoingMessage) return;
 
-    const userMsg = { type: "user", text: input };
+    const userMsg = { type: "user", text: outgoingMessage };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
@@ -140,14 +92,14 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: outgoingMessage })
       });
 
       if (response.ok) {
         const data = await response.json();
         const botMsg = {
           type: "bot",
-          text: cleanBotText(data.bot_response, data.emotion_context)
+          text: formatBotText(data.bot_response)
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
@@ -172,8 +124,6 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
 
   // CLEAR CHAT HISTORY
   const clearChatHistory = async () => {
-    if (!window.confirm("Are you sure you want to clear chat history?")) return;
-
     try {
       const response = await fetch("http://localhost:5000/api/chatbot/history/clear", {
         method: "DELETE",

@@ -47,10 +47,10 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className={`fixed top-3 left-0 w-full z-[1000] transition-all duration-500 px-[5%] flex justify-between items-center
+    <nav className={`fixed top-0 left-0 w-full z-[1000] transition-all duration-500 px-[5%] flex justify-between items-center
       ${scrolled
         ? 'h-[70px] bg-white/80 backdrop-blur-xl shadow-sm border-b border-[#edf2f7]'
-        : 'h-[90px] bg-transparent border-b border-transparent'}`}>
+        : 'h-[95px] bg-transparent border-b border-transparent'}`}>
 
       <Link to="/" className="flex items-center z-[1100]">
         <img

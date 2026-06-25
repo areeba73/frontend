@@ -101,6 +101,17 @@ const Doctors = () => {
     loadDoctors();
   }, []);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isModalOpen]);
+
   const availableDates = useMemo(() => selectedDoctor?.availableDates || [], [selectedDoctor]);
   const selectedDate = form.date || availableDates[0]?.date || '';
 
@@ -273,20 +284,20 @@ const Doctors = () => {
       </main>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto overscroll-contain p-4 pt-20 sm:pt-23">
           <div className="absolute inset-0 bg-[#2F357D]/40 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white/90 backdrop-blur-3xl w-full max-w-md rounded-[40px] shadow-2xl border border-white p-8 animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setIsModalOpen(false)} className="absolute right-6 top-6 text-[#2F357D] font-bold text-xl">x</button>
-            <h2 className="text-2xl font-black text-[#2F357D] mb-2">Book Appointment</h2>
-            <p className="text-sm text-blue-600 font-bold mb-6">with {selectedDoctor?.name}</p>
-            <form className="space-y-5" onSubmit={handleConfirmBooking}>
+          <div className="relative my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-white/95 p-5 shadow-2xl border border-white backdrop-blur-3xl animate-in fade-in zoom-in duration-300 sm:p-6">
+            <button onClick={() => setIsModalOpen(false)} className="absolute right-5 top-4 text-[#2F357D] font-bold text-lg leading-none">x</button>
+            <h2 className="text-xl font-black text-[#2F357D] mb-1 pr-8">Book Appointment</h2>
+            <p className="text-xs text-blue-600 font-bold mb-4">with {selectedDoctor?.name}</p>
+            <form className="space-y-4" onSubmit={handleConfirmBooking}>
               <div>
-                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Select Date</label>
+                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-1.5 ml-1">Select Date</label>
                 <select
                   required
                   value={selectedDate}
                   onChange={(e) => setForm({ ...form, date: e.target.value, timeSlot: '' })}
-                  className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium"
+                  className="w-full bg-white border border-blue-100 rounded-xl px-4 py-2.5 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] text-sm font-medium"
                 >
                   {availableDates.length === 0 ? (
                     <option value="">No available dates</option>
@@ -298,8 +309,8 @@ const Doctors = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Select Time Slot</label>
-                <div className="grid grid-cols-1 gap-2">
+                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-1.5 ml-1">Select Time Slot</label>
+                <div className="grid grid-cols-1 gap-1.5">
                   {timeSlots.map((slot) => {
                     const selected = selectedSlotValue === slot.value;
                     return (
@@ -308,7 +319,7 @@ const Doctors = () => {
                         type="button"
                         disabled={slot.booked}
                         onClick={() => setForm({ ...form, timeSlot: slot.value })}
-                        className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left font-bold transition-all ${
+                        className={`w-full flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-bold transition-all ${
                           slot.booked
                             ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                             : selected
@@ -316,7 +327,7 @@ const Doctors = () => {
                               : 'bg-white text-[#2F357D] border-blue-100 hover:border-[#2F357D]'
                         }`}
                       >
-                        <span>{slot.label}</span>
+                        <span className="min-w-0 truncate">{slot.label}</span>
                         <span className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full ${
                           slot.booked
                             ? 'bg-white text-red-500 border border-red-100'
@@ -330,29 +341,29 @@ const Doctors = () => {
                     );
                   })}
                   {timeSlots.length === 0 && (
-                    <div className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 text-[#2F357D] font-medium">
+                    <div className="w-full bg-white border border-blue-100 rounded-xl px-4 py-2.5 text-[#2F357D] text-sm font-medium">
                       No slots available
                     </div>
                   )}
                   {timeSlots.length > 0 && availableTimeSlots.length === 0 && (
-                    <div className="rounded-2xl bg-red-50 border border-red-100 px-4 py-3 text-sm font-bold text-red-600">
+                    <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs font-bold text-red-600">
                       All slots are booked for this date.
                     </div>
                   )}
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-2 ml-2">Your Email</label>
+                <label className="block text-[10px] font-black uppercase text-[#2F357D]/60 mb-1.5 ml-1">Your Email</label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="example@mail.com"
-                  className="w-full bg-white border border-blue-100 rounded-2xl px-5 py-3 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] font-medium"
+                  className="w-full bg-white border border-blue-100 rounded-xl px-4 py-2.5 outline-none focus:ring-2 ring-blue-400/50 text-[#2F357D] text-sm font-medium"
                 />
               </div>
-              <button disabled={booking || availableDates.length === 0 || availableTimeSlots.length === 0} type="submit" className="w-full bg-[#2F357D] text-white font-black py-4 rounded-[22px] shadow-lg hover:bg-blue-800 transition-all mt-4 disabled:opacity-60">
+              <button disabled={booking || availableDates.length === 0 || availableTimeSlots.length === 0} type="submit" className="w-full bg-[#2F357D] text-white text-sm font-black py-3 rounded-xl shadow-lg hover:bg-blue-800 transition-all mt-2 disabled:opacity-60">
                 {booking ? 'SAVING...' : 'CONFIRM BOOKING'}
               </button>
             </form>
