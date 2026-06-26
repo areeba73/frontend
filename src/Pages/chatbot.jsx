@@ -11,7 +11,7 @@ const Chatbot = () => {
   const chatEndRef = useRef(null);
 const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
   const formatBotText = (text) => {
-    return String(text || "EmoBot is busy right now. Please try again in a moment.").trim();
+    return String(text ?? "EmoBot is busy right now. Please try again in a moment.");
   };
 
   useEffect(() => {
@@ -76,7 +76,7 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
 
   // SEND MESSAGE TO GEMINI
   const sendMessage = async () => {
-    const outgoingMessage = input.trim();
+    const outgoingMessage = input;
     if (!outgoingMessage) return;
 
     const userMsg = { type: "user", text: outgoingMessage };
@@ -208,7 +208,7 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
               className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] md:max-w-[60%] px-5 py-4 rounded-3xl shadow-md
+                className={`max-w-[92%] md:max-w-[78%] px-5 py-4 rounded-3xl shadow-md whitespace-pre-wrap break-words
                 ${msg.type === "user"
                   ? "bg-[#2F357D] text-white rounded-tr-none"
                   : "bg-white/70 text-[#2F357D] backdrop-blur-xl border border-white rounded-tl-none"
@@ -255,7 +255,7 @@ const token = localStorage.getItem("token");  // 🔥 LOAD CHAT HISTORY ON MOUNT
 
           <button
             onClick={sendMessage}
-            disabled={isTyping || !input.trim()}
+            disabled={isTyping || !input}
             className="bg-[#2F357D] text-white w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center hover:scale-110 transition disabled:opacity-50"
           >
             ➤

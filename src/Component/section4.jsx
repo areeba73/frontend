@@ -40,9 +40,9 @@ const Section4 = () => {
       </div>
 
       {/* Responsive Grid Logic */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 min-[425px]:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {features.map((item, index) => (
-          <div key={index} className={index === 4 ? "sm:col-span-2 lg:col-span-1" : ""}>
+          <div key={index}>
             <FeatureCard 
               icon={item.i} 
               title={item.t} 

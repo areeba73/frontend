@@ -55,15 +55,19 @@ const Section3 = () => {
         <div className="hidden sm:block h-[1px] w-12 md:w-16 bg-[#2F357D]"></div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
         {steps.map((step, index) => (
-          <StepCard 
+          <div
             key={index}
-            number={step.n} 
-            title={step.t} 
-            desc={step.d} 
-            active={step.a} 
-          />
+            className={index === 2 ? "sm:col-span-2 sm:w-[calc((100%_-_1.5rem)/2)] sm:mx-auto lg:col-span-1 lg:w-auto lg:mx-0" : ""}
+          >
+            <StepCard 
+              number={step.n} 
+              title={step.t} 
+              desc={step.d} 
+              active={step.a} 
+            />
+          </div>
         ))}
       </div>
     </section>

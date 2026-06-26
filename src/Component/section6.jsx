@@ -12,10 +12,10 @@ const Section6 = () => {
     <div className="flex flex-col items-center justify-center py-8 md:py-12 font-sans text-white">
       
       {/* SECTION 1: Glossy Cards Container */}
-      <div className="flex flex-wrap justify-center gap-6 lg:gap-8 w-full max-w-6xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 w-full max-w-6xl">
         
 {/* User Card */}
-<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full max-w-[350px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
+<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
   <img 
     src={Face} 
     alt="User" 
@@ -28,7 +28,7 @@ const Section6 = () => {
 </div>
 
 {/* Doctor Card */}
-<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full max-w-[350px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
+<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
   <img 
     src={Doctor} 
     alt="Doctor" 
@@ -41,7 +41,7 @@ const Section6 = () => {
 </div>
 
 {/* Admin Card */}
-<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full max-w-[350px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
+<div className="relative overflow-hidden bg-transparent border border-white rounded-[30px] md:rounded-[35px] w-full sm:col-span-2 sm:max-w-[calc((100%_-_1.5rem)/2)] sm:mx-auto xl:col-span-1 xl:max-w-none xl:mx-0 text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 hover:-translate-y-3 group">
   <img 
     src={Admin} 
     alt="Admin" 

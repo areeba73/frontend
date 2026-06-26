@@ -60,18 +60,18 @@ const Navbar = () => {
         />
       </Link>
 
-      <div className={`hidden lg:flex items-center px-6 py-2 rounded-full border transition-all duration-500
+      <div className={`hidden md:flex items-center px-3 lg:px-6 py-2 rounded-full border transition-all duration-500
         ${scrolled
           ? 'border-transparent bg-transparent'
           : 'border-white/40 bg-white/20 backdrop-blur-md'}`}>
-        <ul className="flex gap-8 items-center">
+        <ul className="flex gap-3 lg:gap-8 items-center">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path;
             return (
               <li key={link.name}>
                 <Link
                   to={link.path}
-                  className={`text-sm font-bold transition-all ${isActive ? 'text-blue-500' : 'text-slate-700 hover:text-blue-500'}`}
+                  className={`text-[11px] lg:text-sm font-bold transition-all ${isActive ? 'text-blue-500' : 'text-slate-700 hover:text-blue-500'}`}
                 >
                   {link.name}
                 </Link>
@@ -128,14 +128,14 @@ const Navbar = () => {
 
         <button
           type="button"
-          className="lg:hidden text-2xl text-[#2F357D] p-1"
+          className="md:hidden text-2xl text-[#2F357D] p-1"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <HiX /> : <HiMenuAlt3 />}
         </button>
       </div>
 
-      <div className={`fixed inset-0 bg-white z-[1050] lg:hidden transition-transform duration-500 ease-in-out transform ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed inset-0 bg-white z-[1050] md:hidden transition-transform duration-500 ease-in-out transform ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col items-center justify-center h-full gap-8">
           {navLinks.map((link) => (
             <Link
